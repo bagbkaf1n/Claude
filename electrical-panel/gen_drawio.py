@@ -47,24 +47,29 @@ qf1 = p.box(100, 130, 140, 55, "<b>QF1</b> MCN 225<br>C25, 2P<br>вступни�
 kv  = p.box(100, 215, 140, 55, "<b>KV1</b> ZUBR D2-40red<br>реле напруги 40 А", REL)
 rcd = p.box(100, 300, 140, 55, "<b>QD1</b> CDA 240D<br>ПЗВ 40 А / 30 мА, тип A", RCD)
 qf2 = p.box(470, 300, 140, 55, "<b>QF2</b> MBN 210<br>B10, 2P<br>ввід від станції", MCB)
-sa  = p.box(250, 400, 200, 70, "<b>SA1</b> SFT 225<br>перемикач I–0–II, 25 А<br>I – мережа / II – зарядна станція", SW)
+sa  = p.box(250, 420, 200, 70, "<b>SA1</b> SFT 225<br>перемикач I–0–II, 25 А<br>I – мережа / II – зарядна станція", SW)
 
 p.edge(grid, qf1); p.edge(qf1, kv); p.edge(kv, rcd)
-p.edge(rcd, sa, "I")
+mbus = p.box(-280, 380, 520, 14, "шина L мережі (після QD1)", BUS)
+p.edge(rcd, mbus)
+p.edge(mbus, sa, "I")
 p.edge(gen, qf2, style=GEN_EDGE); p.edge(qf2, sa, "II", style=GEN_EDGE)
 
-qf3 = p.box(-110, 300, 140, 55, "<b>QF3</b> MCN 210<br>C10, 2P", MCB)
-p.edge(rcd, qf3, pts=[(70, 327)])
-xs1 = p.box(-110, 400, 140, 55, "<b>XS1</b> SN016<br>розетка щитка<br>(зарядка станції)", "fillColor=#e1d5e7;strokeColor=#9673a6;")
+qf3 = p.box(-110, 430, 140, 55, "<b>QF3</b> MCN 210<br>C10, 2P", MCB)
+p.edge(mbus, qf3)
+xs1 = p.box(-110, 520, 140, 55, "<b>XS1</b> SN016<br>розетка щитка<br>(зарядка станції)", "fillColor=#e1d5e7;strokeColor=#9673a6;")
 p.edge(qf3, xs1)
-p.edge(xs1, gen, style="dashed=1;strokeColor=#9673a6;endArrow=block;", label="заряд", pts=[(-140, 427), (-140, -10), (540, -10)])
+p.edge(xs1, gen, style="dashed=1;strokeColor=#9673a6;endArrow=block;", label="заряд", pts=[(-40, 790), (660, 790), (660, 75)])
+qf8 = p.box(-270, 430, 140, 55, "<b>QF8</b> MCN 120<br>C20, 1P", MCB)
+p.edge(mbus, qf8)
+l8 = p.box(-270, 520, 140, 55, "Холодильник (кухня)<br>Кондиціонер (зала)<br><i>лише від мережі</i>", "fillColor=none;")
+p.edge(qf8, l8)
 
-bus = p.box(60, 520, 470, 14, "шина L після SA1", BUS)
+bus = p.box(60, 520, 470, 14, "шина L після SA1 (мережа або станція)", BUS)
 p.edge(sa, bus)
 
 groups = [("QF4", "MCN 110", "C10", "Світло<br>дитяча"), ("QF5", "MCN 110", "C10", "Світло<br>зала"),
-          ("QF6", "MCN 116", "C16", "Розетки<br>дитяча"), ("QF7", "MCN 116", "C16", "Розетки<br>зала"),
-          ("QF8", "MCN 120", "C20", "Холодильник (кухня)<br>Кондиціонер (зала)")]
+          ("QF6", "MCN 116", "C16", "Розетки<br>дитяча"), ("QF7", "MCN 116", "C16", "Розетки<br>зала")]
 for k, (tag, model, rating, name) in enumerate(groups):
     x = 60 + k * 95
     b = p.box(x, 580, 85, 60, f"<b>{tag}</b> {model}<br>{rating}, 1P", MCB)
@@ -76,7 +81,8 @@ p.box(780, 60, 340, 270,
       "<b>Примітки</b><br>• Два джерела: мережа (положення I) та зарядна станція (положення II), "
       "перемикаються SA1 — паралельна робота неможлива.<br>"
       "• ПЗВ QD1 стоїть лише в колі мережі (до SA1), тому при живленні від станції "
-      "групи працюють без ПЗВ.<br>"
+      "групи QF4–QF7 працюють без ПЗВ.<br>"
+      "• QF8 (холодильник, кондиціонер) і QF3 живляться лише від мережі — до SA1.<br>"
       "• XS1 живиться від мережі (через QF3) — для зарядки станції; "
       "точка підключення QF3 (до/після ПЗВ) — уточнити.<br>"
       "• N — через сині шини N, PE — через зелену шину PE (на схемі не показані).", NOTE)
