@@ -62,14 +62,14 @@ p.edge(qf3, xs1)
 p.edge(xs1, gen, style="dashed=1;strokeColor=#9673a6;endArrow=block;", label="заряд", pts=[(-40, 790), (660, 790), (660, 75)])
 qf8 = p.box(-270, 430, 140, 55, "<b>QF8</b> MCN 120<br>C20, 1P", MCB)
 p.edge(mbus, qf8, style="exitX=0.154;exitY=1;entryX=0.5;entryY=0;")
-l8 = p.box(-270, 520, 140, 55, "Холодильник (кухня)<br>Кондиціонер (зала)<br><i>лише від мережі</i>", "fillColor=none;")
+l8 = p.box(-270, 520, 140, 55, "Холодильник (кухня)<br>Кондиціонер (зала)<br>3×2,5, <i>лише від мережі</i>", "fillColor=none;")
 p.edge(qf8, l8)
 
 bus = p.box(60, 520, 470, 14, "шина L після SA1 (мережа або станція)", BUS)
 p.edge(sa, bus, style="exitX=0.5;exitY=1;entryX=0.617;entryY=0;")
 
-groups = [("QF4", "MCN 110", "C10", "Світло<br>дитяча"), ("QF5", "MCN 110", "C10", "Світло<br>зала"),
-          ("QF6", "MCN 116", "C16", "Розетки<br>дитяча"), ("QF7", "MCN 116", "C16", "Розетки<br>зала")]
+groups = [("QF4", "MCN 110", "C10", "Світло дитяча<br>3×1,5"), ("QF5", "MCN 110", "C10", "Світло зала<br>3×1,5"),
+          ("QF6", "MCN 116", "C16", "Розетки дитяча<br>3×2,5"), ("QF7", "MCN 116", "C16", "Розетки зала<br>3×2,5")]
 for k, (tag, model, rating, name) in enumerate(groups):
     x = 60 + k * 95
     b = p.box(x, 580, 85, 60, f"<b>{tag}</b> {model}<br>{rating}, 1P", MCB)
@@ -257,13 +257,13 @@ w.box(256, 756, 110, 16, "гребінка QF4–QF7 (знизу)", "fillColor=n
 bar_stub(340, "9", BLUE); bar_stub(240, "18", BLUE)
 
 # outgoing lines — from the upper terminals
-loads = [(240, "Світло дитяча", BRN), (280, "Світло зала", BRN),
-         (320, "Розетки дитяча", BRN), (360, "Розетки зала", BRN),
-         (400, "Холод. / кондиц.", RED)]
+loads = [(240, "Світло дитяча<br>3×1,5", BRN), (280, "Світло зала<br>3×1,5", BRN),
+         (320, "Розетки дитяча<br>3×2,5", BRN), (360, "Розетки зала<br>3×2,5", BRN),
+         (400, "Холод. / кондиц.<br>3×2,5", RED)]
 for x, text, col in loads:
     vline(x, 545, 573, col)
     ferrule(x, 564)
-    w.box(x - 9, 463, 18, 84, text, f"horizontal=0;fillColor=#ffffff;strokeColor={col};strokeWidth=2;fontSize=9;fontStyle=1;spacing=0;rounded=1;arcSize=20;")
+    w.box(x - 14, 463, 28, 84, text, f"horizontal=0;fillColor=#ffffff;strokeColor={col};strokeWidth=2;fontSize=8;fontStyle=1;spacing=0;rounded=1;arcSize=20;")
 plug = pt(70, 800)
 w.edge(sock, plug, style="edgeStyle=none;strokeColor=#bbbbbb;strokeWidth=7;endArrow=block;endFill=1;endSize=3;", pts=[(70, 650)])
 w.box(26, 800, 100, 28, "кабель до зарядної<br>станції (заряд)", "fillColor=none;strokeColor=none;fontSize=9;")
