@@ -41,43 +41,45 @@ DASH = "dashed=1;strokeColor=#888888;"
 p = Page("Однолінійна схема")
 p.box(40, 10, 700, 30, "Однолінійна схема щита (1ф, 230 В)", TITLE)
 grid = p.box(110, 50, 120, 50, "Мережа<br>~230 В, L+N", SRC)
-gen  = p.box(450, 50, 120, 50, "Генератор<br>(вилка SN016)", SRC)
+gen  = p.box(470, 50, 140, 50, "Зарядна станція<br>(вихід ~230 В)", SRC)
 
-qf1 = p.box(100, 140, 140, 60, "<b>QF1</b> MCN 225<br>C25, 2P<br>вступний", MCB)
-kv  = p.box(100, 240, 140, 60, "<b>KV1</b> ZUBR D2-40red<br>реле напруги 40 А", REL)
-qf2 = p.box(440, 140, 140, 60, "<b>QF2</b> MBN 210<br>B10, 2P<br>захист генератора", MCB)
-sa  = p.box(250, 340, 160, 70, "<b>SA1</b> SFT 225<br>перемикач I–0–II, 25 А<br>I – мережа / II – генератор", SW)
+qf1 = p.box(100, 130, 140, 55, "<b>QF1</b> MCN 225<br>C25, 2P<br>вступний", MCB)
+kv  = p.box(100, 215, 140, 55, "<b>KV1</b> ZUBR D2-40red<br>реле напруги 40 А", REL)
+rcd = p.box(100, 300, 140, 55, "<b>QD1</b> CDA 240D<br>ПЗВ 40 А / 30 мА, тип A", RCD)
+qf2 = p.box(470, 300, 140, 55, "<b>QF2</b> MBN 210<br>B10, 2P<br>ввід від станції", MCB)
+sa  = p.box(250, 400, 200, 70, "<b>SA1</b> SFT 225<br>перемикач I–0–II, 25 А<br>I – мережа / II – зарядна станція", SW)
 
-p.edge(grid, qf1); p.edge(qf1, kv)
-p.edge(kv, sa, "I")
+p.edge(grid, qf1); p.edge(qf1, kv); p.edge(kv, rcd)
+p.edge(rcd, sa, "I")
 p.edge(gen, qf2, style=GEN_EDGE); p.edge(qf2, sa, "II", style=GEN_EDGE)
 
-rcd = p.box(250, 450, 160, 60, "<b>QD1</b> CDA 240D<br>ПЗВ 40 А / 30 мА, тип A", RCD)
-p.edge(sa, rcd)
-qf3 = p.box(560, 450, 140, 60, "<b>QF3</b> MCN 210<br>C10, 2P<br>(призначення?)", MCB)
-p.edge(sa, qf3, style=DASH, pts=[(630, 375)])
-l6 = p.box(560, 560, 140, 40, "Лінія 6 (без ПЗВ?)", "fillColor=none;dashed=1;")
-p.edge(qf3, l6, style=DASH)
+qf3 = p.box(-110, 300, 140, 55, "<b>QF3</b> MCN 210<br>C10, 2P", MCB)
+p.edge(rcd, qf3, pts=[(70, 327)])
+xs1 = p.box(-110, 400, 140, 55, "<b>XS1</b> SN016<br>розетка щитка<br>(зарядка станції)", "fillColor=#e1d5e7;strokeColor=#9673a6;")
+p.edge(qf3, xs1)
+p.edge(xs1, gen, style="dashed=1;strokeColor=#9673a6;endArrow=block;", label="заряд", pts=[(-140, 427), (-140, -10), (540, -10)])
 
-bus = p.box(60, 560, 470, 14, "шина L після ПЗВ", BUS)
-p.edge(rcd, bus)
+bus = p.box(60, 520, 470, 14, "шина L після SA1", BUS)
+p.edge(sa, bus)
 
-groups = [("QF4", "MCN 110", "C10"), ("QF5", "MCN 110", "C10"), ("QF6", "MCN 116", "C16"),
-          ("QF7", "MCN 116", "C16"), ("QF8", "MCN 120", "C20")]
-for k, (tag, model, rating) in enumerate(groups):
+groups = [("QF4", "MCN 110", "C10", "Світло<br>дитяча"), ("QF5", "MCN 110", "C10", "Світло<br>зала"),
+          ("QF6", "MCN 116", "C16", "Розетки<br>дитяча"), ("QF7", "MCN 116", "C16", "Розетки<br>зала"),
+          ("QF8", "MCN 120", "C20", "Холодильник (кухня)<br>Кондиціонер (зала)")]
+for k, (tag, model, rating, name) in enumerate(groups):
     x = 60 + k * 95
-    b = p.box(x, 620, 85, 60, f"<b>{tag}</b> {model}<br>{rating}, 1P", MCB)
+    b = p.box(x, 580, 85, 60, f"<b>{tag}</b> {model}<br>{rating}, 1P", MCB)
     p.edge(bus, b)
-    ln = p.box(x, 720, 85, 50, f"Група {k+1}<br>(вкажіть)", "fillColor=none;")
+    ln = p.box(x, 680, 85, 60, name, "fillColor=none;")
     p.edge(b, ln)
 
-p.box(780, 60, 340, 250,
-      "<b>Примітки</b><br>• Апарати і номінали — з фото щита.<br>"
-      "• Порядок з'єднань <b>припущений</b> за типовою схемою "
-      "«мережа + генератор»; перевірте реальне підключення.<br>"
-      "• Штрихова лінія — найменш певне з'єднання (QF3).<br>"
-      "• N — через сині шини N, PE — через зелену шину PE (на схемі не показані).<br>"
-      "• Підписи груп (освітлення, розетки, кухня…) заповніть самі.", NOTE)
+p.box(780, 60, 340, 270,
+      "<b>Примітки</b><br>• Два джерела: мережа (положення I) та зарядна станція (положення II), "
+      "перемикаються SA1 — паралельна робота неможлива.<br>"
+      "• ПЗВ QD1 стоїть лише в колі мережі (до SA1), тому при живленні від станції "
+      "групи працюють без ПЗВ.<br>"
+      "• XS1 живиться від мережі (через QF3) — для зарядки станції; "
+      "точка підключення QF3 (до/після ПЗВ) — уточнити.<br>"
+      "• N — через сині шини N, PE — через зелену шину PE (на схемі не показані).", NOTE)
 
 # ---------- Page 2: front-view layout ----------
 q = Page("Розміщення в щиті")
@@ -107,12 +109,12 @@ row(q, 160, [
     (2, "<b>QF1</b><br>MCN 225<br>C25", MCB),
 ])
 row(q, 420, [
-    (3, "<b>XS1</b><br>SN016<br>ввід генератора", "fillColor=#e1d5e7;strokeColor=#9673a6;"),
-    (1, "<b>QF4</b><br>MCN<br>110<br>C10", MCB),
-    (1, "<b>QF5</b><br>MCN<br>110<br>C10", MCB),
-    (1, "<b>QF6</b><br>MCN<br>116<br>C16", MCB),
-    (1, "<b>QF7</b><br>MCN<br>116<br>C16", MCB),
-    (1, "<b>QF8</b><br>MCN<br>120<br>C20", MCB),
+    (3, "<b>XS1</b><br>SN016<br>розетка<br>(зарядка станції)", "fillColor=#e1d5e7;strokeColor=#9673a6;"),
+    (1, "<b>QF4</b><br>MCN<br>110<br>C10<br><i>світло дит.</i>", MCB),
+    (1, "<b>QF5</b><br>MCN<br>110<br>C10<br><i>світло зала</i>", MCB),
+    (1, "<b>QF6</b><br>MCN<br>116<br>C16<br><i>роз. дит.</i>", MCB),
+    (1, "<b>QF7</b><br>MCN<br>116<br>C16<br><i>роз. зала</i>", MCB),
+    (1, "<b>QF8</b><br>MCN<br>120<br>C20<br><i>холод./конд.</i>", MCB),
     (6, "вільно", "fillColor=none;dashed=1;strokeColor=#999999;fontColor=#999999;"),
 ])
 
