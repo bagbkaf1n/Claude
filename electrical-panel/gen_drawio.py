@@ -9,12 +9,12 @@ class Page:
         return f"c{self.n}"
     def box(self, x, y, w, h, text, style=""):
         i = self._id()
-        st = "rounded=0;whiteSpace=wrap;html=1;fontSize=11;" + style
+        st = "rounded=0;whiteSpace=wrap;html=1;fontSize=11;fontColor=#000000;" + style
         self.cells.append(f'<mxCell id="{i}" value="{escape(text, {chr(34): "&quot;"})}" style="{st}" vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" width="{w}" height="{h}" as="geometry"/></mxCell>')
         return i
     def edge(self, a, b, label="", style="", pts=None):
         i = self._id()
-        st = "edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=2;fontSize=10;" + style
+        st = "edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;strokeWidth=2;strokeColor=#000000;fontSize=12;fontStyle=1;labelBackgroundColor=#ffffff;" + style
         geo = '<mxGeometry relative="1" as="geometry">'
         if pts:
             geo += '<Array as="points">' + "".join(f'<mxPoint x="{px}" y="{py}"/>' for px, py in pts) + '</Array>'
@@ -51,33 +51,33 @@ sa  = p.box(250, 420, 200, 70, "<b>SA1</b> SFT 225<br>перемикач I–0�
 
 p.edge(grid, qf1); p.edge(qf1, kv); p.edge(kv, rcd)
 mbus = p.box(-280, 380, 520, 14, "шина L мережі (після QD1)", BUS)
-p.edge(rcd, mbus)
-p.edge(mbus, sa, "I")
-p.edge(gen, qf2, style=GEN_EDGE); p.edge(qf2, sa, "II", style=GEN_EDGE)
+p.edge(rcd, mbus, style="exitX=0.5;exitY=1;entryX=0.865;entryY=0;")
+p.edge(mbus, sa, "I", style="exitX=1;exitY=0.5;entryX=0.25;entryY=0;", pts=[(300, 387)])
+p.edge(gen, qf2, style=GEN_EDGE); p.edge(qf2, sa, "II", style=GEN_EDGE + "exitX=0.5;exitY=1;entryX=0.75;entryY=0;", pts=[(540, 395), (400, 395)])
 
 qf3 = p.box(-110, 430, 140, 55, "<b>QF3</b> MCN 210<br>C10, 2P", MCB)
-p.edge(mbus, qf3)
+p.edge(mbus, qf3, style="exitX=0.4615;exitY=1;entryX=0.5;entryY=0;")
 xs1 = p.box(-110, 520, 140, 55, "<b>XS1</b> SN016<br>розетка щитка<br>(зарядка станції)", "fillColor=#e1d5e7;strokeColor=#9673a6;")
 p.edge(qf3, xs1)
 p.edge(xs1, gen, style="dashed=1;strokeColor=#9673a6;endArrow=block;", label="заряд", pts=[(-40, 790), (660, 790), (660, 75)])
 qf8 = p.box(-270, 430, 140, 55, "<b>QF8</b> MCN 120<br>C20, 1P", MCB)
-p.edge(mbus, qf8)
+p.edge(mbus, qf8, style="exitX=0.154;exitY=1;entryX=0.5;entryY=0;")
 l8 = p.box(-270, 520, 140, 55, "Холодильник (кухня)<br>Кондиціонер (зала)<br><i>лише від мережі</i>", "fillColor=none;")
 p.edge(qf8, l8)
 
 bus = p.box(60, 520, 470, 14, "шина L після SA1 (мережа або станція)", BUS)
-p.edge(sa, bus)
+p.edge(sa, bus, style="exitX=0.5;exitY=1;entryX=0.617;entryY=0;")
 
 groups = [("QF4", "MCN 110", "C10", "Світло<br>дитяча"), ("QF5", "MCN 110", "C10", "Світло<br>зала"),
           ("QF6", "MCN 116", "C16", "Розетки<br>дитяча"), ("QF7", "MCN 116", "C16", "Розетки<br>зала")]
 for k, (tag, model, rating, name) in enumerate(groups):
     x = 60 + k * 95
     b = p.box(x, 580, 85, 60, f"<b>{tag}</b> {model}<br>{rating}, 1P", MCB)
-    p.edge(bus, b)
+    p.edge(bus, b, style=f"exitX={(x + 42.5 - 60) / 470:.4f};exitY=1;entryX=0.5;entryY=0;")
     ln = p.box(x, 680, 85, 60, name, "fillColor=none;")
     p.edge(b, ln)
 
-p.box(780, 60, 340, 270,
+p.box(780, 60, 340, 150,
       "<b>Примітки</b><br>• Два джерела: мережа (положення I) та зарядна станція (положення II), "
       "перемикаються SA1 — паралельна робота неможлива.<br>"
       "• ПЗВ QD1 стоїть лише в колі мережі (до SA1), тому при живленні від станції "
