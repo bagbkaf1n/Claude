@@ -1,0 +1,328 @@
+<title>Щит: живлення наживо</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap">
+<style>
+/* Layout: technical sheet — controls strip, live single-line diagram, mode readout underneath */
+:root {
+  --bg: #f3f4f1; --panel: #ffffff; --fg: #1d2420; --muted: #66706a; --rule: #d3d8d2;
+  --dead: #b9c0ba; --box: #fbfcfa; --boxline: #8d978f;
+  --grid: #d0791a; --station: #2f8f4e; --ups: #8a5bb5; --warn: #b8322a;
+  --sans: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141815; --panel: #1b201c; --fg: #e4e9e4; --muted: #95a097; --rule: #2d342f;
+  --dead: #3c443e; --box: #1f2520; --boxline: #56605a;
+  --grid: #f0a040; --station: #4fc274; --ups: #b48ae0; --warn: #ef6a5f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141815; --panel: #1b201c; --fg: #e4e9e4; --muted: #95a097; --rule: #2d342f;
+  --dead: #3c443e; --box: #1f2520; --boxline: #56605a;
+  --grid: #f0a040; --station: #4fc274; --ups: #b48ae0; --warn: #ef6a5f; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 32px; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 1.6rem; margin: 0; font-weight: 700; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); max-width: 65ch; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+.ctl { display: flex; align-items: center; gap: 8px; }
+.ctl-label { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--boxline); border-radius: 6px; overflow: hidden; }
+.seg button, .btn {
+  font: 600 .95rem var(--mono); background: var(--panel); color: var(--fg); border: 0;
+  padding: 7px 14px; cursor: pointer; min-width: 44px;
+}
+.seg button + button { border-left: 1px solid var(--boxline); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.btn { border: 1px solid var(--boxline); border-radius: 6px; font-family: var(--sans); }
+.btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+button:focus-visible { outline: 2px solid var(--grid); outline-offset: 2px; }
+
+.sheet { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; overflow-x: auto; }
+svg { display: block; width: 100%; min-width: 720px; height: auto; }
+
+.readout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px 32px; }
+@media (max-width: 700px) { .readout { grid-template-columns: minmax(0, 1fr); } }
+.mode-name { font-size: 1.15rem; font-weight: 700; margin: 0 0 6px; display: flex; gap: 10px; align-items: center; }
+.mode-text { margin: 0; line-height: 1.5; max-width: 65ch; }
+.pill { font: 600 .72rem var(--mono); letter-spacing: .06em; padding: 3px 8px; border-radius: 99px; border: 1px solid currentColor; }
+.legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: .9rem; color: var(--muted); }
+.legend li { display: flex; align-items: center; gap: 10px; }
+.sw { width: 34px; height: 0; border-top: 4px solid; flex: none; }
+.sw.dash { border-top-style: dashed; }
+.note { font-size: .8rem; color: var(--muted); margin: 0; }
+
+/* diagram */
+.wire { fill: none; stroke: var(--dead); stroke-width: 2.5; transition: stroke .4s; }
+.flow { fill: none; stroke-width: 3.5; stroke-dasharray: 7 9; stroke-linecap: round; opacity: 0; transition: opacity .3s; }
+.flow.on { opacity: 1; animation: run .9s linear infinite; }
+@keyframes run { to { stroke-dashoffset: -16; } }
+.bus { stroke-width: 9; stroke-linecap: butt; }
+.box rect { fill: var(--box); stroke: var(--boxline); stroke-width: 1.2; transition: stroke .4s; }
+.box.lit rect { stroke-width: 2; }
+.box text, .lbl { fill: var(--fg); font-family: var(--sans); font-size: 13px; }
+.box .t1 { font-weight: 700; font-size: 13px; }
+.box .t2 { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
+.lbl.small { font-size: 11px; fill: var(--muted); font-family: var(--mono); }
+.src ellipse { fill: var(--box); stroke-width: 2; transition: stroke .4s, fill .4s; }
+.blade { stroke-width: 4; stroke-linecap: round; transition: transform .45s cubic-bezier(.5,1.6,.5,1), stroke .3s;
+  transform-box: view-box; transform-origin: 520px 455px; }
+.bolt { opacity: 0; transition: opacity .3s; }
+.bolt.on { opacity: 1; animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) {
+  .flow.on, .bolt.on { animation: none; }
+  .blade { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Щит: куди тече струм</h1>
+    <p class="sub">Однолінійна схема щита (1ф, 230 В) з перемикачем SA1 і зарядною станцією Deye SUN-BK250 у режимі UPS. Перемикайте мережу й SA1 і дивіться, як змінюється шлях струму.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Керування">
+    <div class="ctl"><span class="ctl-label" id="lg">Мережа</span>
+      <div class="seg" aria-labelledby="lg">
+        <button id="g1" type="button">є</button><button id="g0" type="button">немає</button>
+      </div></div>
+    <div class="ctl"><span class="ctl-label" id="ls">SA1</span>
+      <div class="seg" aria-labelledby="ls">
+        <button id="sI" type="button">I</button><button id="s0" type="button">0</button><button id="sII" type="button">II</button>
+      </div></div>
+    <button class="btn" id="demo" type="button" aria-pressed="false">▶ Демо-сценарій</button>
+    <button class="btn" id="recharge" type="button">Зарядити батарею</button>
+  </div>
+
+  <div class="sheet"><svg id="d" viewBox="0 0 960 790" role="img" aria-label="Анімована однолінійна схема щита"></svg></div>
+
+  <section class="readout" aria-live="polite">
+    <div>
+      <p class="mode-name"><span id="mname"></span><span class="pill" id="mpill"></span></p>
+      <p class="mode-text" id="mtext"></p>
+    </div>
+    <div>
+      <ul class="legend">
+        <li><span class="sw" style="border-color:var(--grid)"></span>струм від мережі</li>
+        <li><span class="sw" style="border-color:var(--station)"></span>струм від станції</li>
+        <li><span class="sw dash" style="border-color:var(--ups)"></span>заряд станції від XS1</li>
+        <li><span class="sw" style="border-color:var(--dead)"></span>без струму</li>
+      </ul>
+    </div>
+  </section>
+  <p class="note">Швидкість розряду батареї прискорена для наочності. N і PE на схемі не показані (система TN-C).</p>
+</div>
+
+<script>
+(() => {
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("d");
+const el = (tag, attrs, parent = svg) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e); return e;
+};
+
+// wires: id, path (in direction of current), source colour key
+const W = [
+  ["g1", "M200 75 V105", "grid"], ["g2", "M200 155 V185", "grid"], ["g3", "M200 235 V265", "grid"],
+  ["g4", "M200 315 V360", "grid"],
+  ["f1", "M90 360 V405", "grid"], ["f2", "M90 455 V485", "grid"],
+  ["x1", "M240 360 V405", "grid"], ["x2", "M240 455 V485", "grid"],
+  ["sI", "M420 360 H490 V412", "grid"],
+  ["st1", "M720 75 V265", "station"], ["st2", "M720 315 V375 H550 V412", "station"],
+  ["out", "M520 455 V520", "bus2"],
+  ["ups", "M240 535 V750 H920 V50 H790", "ups"],
+];
+[400, 520, 640, 760].forEach((x, i) => {
+  W.push([`l${i}a`, `M${x} 520 V555`, "bus2"], [`l${i}b`, `M${x} 605 V635`, "bus2"]);
+});
+const wires = {};
+for (const [id, d] of W) {
+  const base = el("path", { d, class: "wire" });
+  const flow = el("path", { d, class: "flow" });
+  wires[id] = { base, flow };
+}
+// buses
+const bus1 = el("path", { d: "M40 360 H420", class: "wire bus" });
+const bus2 = el("path", { d: "M360 520 H800", class: "wire bus" });
+el("text", { x: 255, y: 350, class: "lbl small" }).textContent = "шина L мережі (після QD1)";
+el("text", { x: 366, y: 510, class: "lbl small" }).textContent = "шина L після SA1";
+
+// sources
+const src = (x, y, a, b) => {
+  const g = el("g", { class: "src" });
+  const e = el("ellipse", { cx: x, cy: y, rx: 70, ry: 25 }, g);
+  const t1 = el("text", { x, y: y - 3, "text-anchor": "middle", class: "lbl", "font-weight": 700 }, g); t1.textContent = a;
+  const t2 = el("text", { x, y: y + 13, "text-anchor": "middle", class: "lbl small" }, g); t2.textContent = b;
+  return { e, t2 };
+};
+const gridSrc = src(200, 50, "Мережа", "~230 В, L+N");
+const stSrc = src(720, 50, "Зарядна станція", "");
+
+// boxes
+const boxes = {};
+const box = (id, x, y, w, h, l1, l2, l3) => {
+  const g = el("g", { class: "box" });
+  el("rect", { x: x - w / 2, y: y - h / 2, width: w, height: h, rx: 4 }, g);
+  const lines = [l1, l2, l3].filter(Boolean);
+  const y0 = y - (lines.length - 1) * 7.5 + 4;
+  lines.forEach((t, i) => {
+    const tx = el("text", { x, y: y0 + i * 15, "text-anchor": "middle", class: i === 0 ? "t1" : "t2" }, g);
+    tx.textContent = t;
+  });
+  boxes[id] = g;
+};
+box("QF1", 200, 130, 140, 50, "QF1 MCN 225", "C25, 2P, вступний");
+box("KV1", 200, 210, 140, 50, "KV1 ZUBR D2-40red", "реле напруги 40 А");
+box("QD1", 200, 290, 140, 50, "QD1 CDA 240D", "ПЗВ 40 А / 30 мА");
+box("QF8", 90, 430, 120, 50, "QF8 MCN 120", "C20, 1P");
+box("QF3", 240, 430, 120, 50, "QF3 MCN 210", "C10, 2P");
+box("L8", 90, 510, 140, 50, "Холодильник,", "кондиціонер");
+box("XS1", 240, 510, 120, 50, "XS1 SN016", "розетка станції");
+box("QF2", 720, 290, 140, 50, "QF2 MBN 210", "B10, 2P, від станції");
+const loads = [["QF4", "MCN 110 C10", "Світло дитяча", "3×1,5"], ["QF5", "MCN 110 C10", "Світло зала", "3×1,5"],
+  ["QF6", "MCN 116 C16", "Розетки дитяча", "3×2,5"], ["QF7", "MCN 116 C16", "Розетки зала", "3×2,5"]];
+loads.forEach(([q, t, n, c], i) => {
+  const x = 400 + i * 120;
+  box(q, x, 580, 112, 50, q, t);
+  box("L" + q, x, 660, 112, 50, n, c);
+});
+
+// SA1 switch
+const sa = el("g", { class: "box" });
+el("rect", { x: 470, y: 405, width: 100, height: 60, rx: 4 }, sa);
+boxes.SA1 = sa;
+el("text", { x: 478, y: 398, class: "lbl small", "text-anchor": "end" }).textContent = "I";
+el("text", { x: 562, y: 398, class: "lbl small" }).textContent = "II";
+el("circle", { cx: 490, cy: 415, r: 3.5, fill: "var(--fg)" });
+el("circle", { cx: 550, cy: 415, r: 3.5, fill: "var(--fg)" });
+el("circle", { cx: 520, cy: 455, r: 4, fill: "var(--fg)" });
+const blade = el("line", { x1: 520, y1: 455, x2: 520, y2: 405, class: "blade", stroke: "var(--dead)" });
+const t = el("text", { x: 582, y: 432, class: "lbl", "font-weight": 700 }); t.textContent = "SA1 SFT 225";
+const t2 = el("text", { x: 582, y: 448, class: "lbl small" }); t2.textContent = "перемикач I–0–II, 25 А";
+
+// battery gauge
+const bg = el("g", {});
+el("rect", { x: 800, y: 110, width: 70, height: 28, rx: 4, fill: "none", stroke: "var(--boxline)", "stroke-width": 1.5 }, bg);
+el("rect", { x: 870, y: 118, width: 5, height: 12, rx: 1, fill: "var(--boxline)" }, bg);
+const batFill = el("rect", { x: 803, y: 113, width: 64, height: 22, rx: 2, fill: "var(--station)" }, bg);
+const batTxt = el("text", { x: 835, y: 156, "text-anchor": "middle", class: "lbl small" }, bg);
+const bolt = el("path", { d: "M838 114 L828 125 H836 L831 134 L842 122 H834 Z", fill: "var(--fg)", class: "bolt" }, bg);
+el("text", { x: 905, y: 400, class: "lbl small", transform: "rotate(90 905 400)", "text-anchor": "middle" })
+  .textContent = "заряд + транзит (UPS)";
+
+// state
+const S = { grid: true, sa1: "II", bat: 80, demo: false };
+const col = { grid: "var(--grid)", station: "var(--station)", ups: "var(--ups)" };
+
+function render() {
+  const g = S.grid;
+  const stAlive = g || S.bat > 0;
+  const fromI = S.sa1 === "I" && g;
+  const fromII = S.sa1 === "II" && stAlive;
+  const busSrc = fromI ? "grid" : fromII ? "station" : null;
+
+  // flowing: current actually moves; live: voltage present, no current
+  const state = {};
+  for (const id of ["g1", "g2", "g3", "g4", "f1", "f2", "x1", "x2"]) state[id] = g ? "flow" : "dead";
+  state.ups = g ? "flow" : "dead";
+  state.sI = fromI ? "flow" : g ? "live" : "dead";
+  state.st1 = state.st2 = fromII ? "flow" : stAlive ? "live" : "dead";
+  for (const [id, , k] of W) if (k === "bus2") state[id] = busSrc ? "flow" : "dead";
+
+  for (const [id, , k] of W) {
+    const c = k === "bus2" ? (busSrc ? col[busSrc] : null) : col[k];
+    const s = state[id], w = wires[id];
+    w.base.style.stroke = s === "dead" ? "" : c;
+    w.base.style.strokeDasharray = k === "ups" ? "6 6" : "";
+    w.base.style.opacity = s === "live" ? .7 : 1;
+    w.flow.style.stroke = c || "";
+    w.flow.classList.toggle("on", s === "flow");
+  }
+  bus1.style.stroke = g ? col.grid : "";
+  bus2.style.stroke = busSrc ? col[busSrc] : "";
+
+  const lit = (id, c) => { boxes[id].classList.toggle("lit", !!c); boxes[id].querySelector("rect").style.stroke = c || ""; };
+  for (const id of ["QF1", "KV1", "QD1", "QF8", "QF3", "L8", "XS1"]) lit(id, g && col.grid);
+  lit("QF2", stAlive && col.station);
+  for (const [q] of loads) { lit(q, busSrc && col[busSrc]); lit("L" + q, busSrc && col[busSrc]); }
+  lit("SA1", busSrc && col[busSrc]);
+
+  blade.style.transform = `rotate(${S.sa1 === "I" ? -36.87 : S.sa1 === "II" ? 36.87 : 0}deg)`;
+  blade.style.stroke = busSrc ? col[busSrc] : "var(--dead)";
+
+  gridSrc.e.style.stroke = g ? col.grid : "var(--dead)";
+  stSrc.e.style.stroke = stAlive ? col.station : "var(--dead)";
+  stSrc.t2.textContent = !stAlive ? "вимкнена" : g ? "транзит, заряд" : "від батареї";
+
+  const pct = Math.round(S.bat);
+  batFill.setAttribute("width", 64 * S.bat / 100);
+  batFill.style.fill = S.bat < 20 ? "var(--warn)" : "var(--station)";
+  batTxt.textContent = `батарея ${pct}%`;
+  bolt.classList.toggle("on", g && S.bat < 100);
+
+  // readout
+  let name, pill, pc, text;
+  if (S.sa1 === "0") {
+    name = "SA1 у нулі"; pill = "ГРУПИ ВИМК."; pc = "var(--muted)";
+    text = "Шина груп QF4–QF7 відключена від обох джерел. Холодильник і кондиціонер (QF8) та розетка станції XS1 працюють, поки є мережа.";
+  } else if (S.sa1 === "I" && g) {
+    name = "Пряме живлення від мережі"; pill = "МЕРЕЖА"; pc = "var(--grid)";
+    text = "Групи QF4–QF7 живляться від мережі через QD1 і SA1 (I). Станція заряджається від XS1, на контакті II є напруга, але струм не тече.";
+  } else if (S.sa1 === "II" && g) {
+    name = "UPS-транзит"; pill = "МЕРЕЖА → СТАНЦІЯ"; pc = "var(--ups)";
+    text = "Струм іде шляхом QD1 → QF3 → XS1 → станція → QF2 → SA1 (II) → групи. Станція пропускає мережу транзитом і заряджає батарею. ПЗВ QD1 захищає й групи, бо вони живляться через нього.";
+  } else if (S.sa1 === "II" && S.bat > 0) {
+    name = "Мережі немає: робота від батареї"; pill = "БАТАРЕЯ"; pc = "var(--station)";
+    text = "Станція живить QF4–QF7 від батареї. QF8 і XS1 знеструмлені. У цьому режимі ПЗВ QD1 групи не захищає.";
+  } else if (S.sa1 === "II") {
+    name = "Батарея розряджена"; pill = "ВСЕ ВИМК."; pc = "var(--warn)";
+    text = "Станція вимкнулась. Коли повернеться мережа, вона знову ввімкнеться і почне заряджатися.";
+  } else {
+    name = "Мережі немає, SA1 у положенні I"; pill = "ГРУПИ ВИМК."; pc = "var(--warn)";
+    text = "Групи QF4–QF7 підключені до мережі, якої немає. Переведіть SA1 у положення II, щоб живити їх від станції.";
+  }
+  document.getElementById("mname").textContent = name;
+  const p = document.getElementById("mpill"); p.textContent = pill; p.style.color = pc;
+
+  document.getElementById("mtext").textContent = text;
+  const pr = (id, on) => document.getElementById(id).setAttribute("aria-pressed", on);
+  pr("g1", g); pr("g0", !g); pr("sI", S.sa1 === "I"); pr("s0", S.sa1 === "0"); pr("sII", S.sa1 === "II");
+  pr("demo", S.demo);
+  document.getElementById("demo").textContent = S.demo ? "■ Зупинити демо" : "▶ Демо-сценарій";
+}
+
+const stopDemo = () => { S.demo = false; };
+const on = (id, f) => document.getElementById(id).addEventListener("click", () => { f(); render(); });
+on("g1", () => { stopDemo(); S.grid = true; });
+on("g0", () => { stopDemo(); S.grid = false; });
+on("sI", () => { stopDemo(); S.sa1 = "I"; });
+on("s0", () => { stopDemo(); S.sa1 = "0"; });
+on("sII", () => { stopDemo(); S.sa1 = "II"; });
+on("recharge", () => { S.bat = 100; });
+on("demo", () => { S.demo = !S.demo; step = 0; stepT = 0; if (S.demo) applyStep(); });
+
+const STEPS = [[true, "I", 5], [true, "II", 6], [false, "II", 7], [true, "II", 5], [true, "0", 3], [false, "I", 4]];
+let step = 0, stepT = 0;
+const applyStep = () => { [S.grid, S.sa1] = STEPS[step]; };
+
+let last = performance.now(), acc = 0;
+function tick(now) {
+  const dt = Math.min(.25, (now - last) / 1000); last = now;
+  const load = S.sa1 === "II";
+  if (S.grid) S.bat = Math.min(100, S.bat + dt * 2.5);
+  else if (load) S.bat = Math.max(0, S.bat - dt * 2);
+  if (S.demo) {
+    stepT += dt;
+    if (stepT >= STEPS[step][2]) { stepT = 0; step = (step + 1) % STEPS.length; applyStep(); }
+  }
+  acc += dt;
+  if (acc > .2) { acc = 0; render(); }
+  requestAnimationFrame(tick);
+}
+render();
+requestAnimationFrame(tick);
+})();
+</script>
