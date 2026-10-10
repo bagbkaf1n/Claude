@@ -130,7 +130,9 @@ w.box(30, -30, 700, 26, "Монтажна схема щита (вигляд сп
 w.box(20, 0, 730, 830, "", "fillColor=#ffffff;strokeColor=#999999;strokeWidth=2;rounded=1;arcSize=2;")
 T = {}
 
+TP = {}
 def term(key, x, y):
+    TP[key] = (x, y)
     T[key] = w.box(x - 7, y - 7, 14, 14, "", "ellipse;shape=ellipse;fillColor=#ffffff;strokeColor=#444444;strokeWidth=1.5;")
 
 def device(x, y, mods, h, tops, bots, model, tag, note="", kind="mcb"):
@@ -159,10 +161,6 @@ def bar(x, y, wd, label, fill):
 def pt(x, y):
     return w.box(x - 1, y - 1, 2, 2, "", "fillColor=none;strokeColor=none;")
 
-RED, BLUE, BRN, ORG, PEC = "#e02020", "#1f5fd0", "#8b4513", "#ff8c00", "#4caf50"
-def wire(a, b, color, pts=None, extra=""):
-    st = f"edgeStyle=none;strokeColor={color};strokeWidth=3;jumpStyle=arc;jumpSize=10;" + extra
-    w.edge(a, b, style=st, pts=pts)
 
 # busbars
 n2 = bar(190, 60, 100, "N2 (після SA1)", "#9cc3e6")
@@ -190,67 +188,104 @@ groups3 = [("QF4", "MCN 110<br>C10"), ("QF5", "MCN 110<br>C10"), ("QF6", "MCN 11
 for k, (tag, model) in enumerate(groups3):
     device(220 + k * 40, 520, 1, 180, [(tag + "t", 20)], [(tag + "b", 20)], model, tag)
 
-# mains input (right) and station input (top-left)
-inL, inN, inPE = pt(740, 150), pt(740, 160), pt(740, 75)
-w.box(680, 112, 70, 30, "Мережа<br>230 В", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;align=right;")
-stL, stN = pt(120, 20), pt(160, 20)
-w.box(30, 4, 85, 30, "Від зарядної<br>станції", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;align=right;")
+RED, BLUE, BRN, ORG, PEC = "#e02020", "#1f5fd0", "#8b4513", "#ff8c00", "#4caf50"
 
-wire(inPE, pe, PEC, extra="dashed=1;dashPattern=8 4;")
-wire(inL, T["QF1t1"], RED, [(520, 150)])
-wire(inN, T["QF1t2"], BLUE, [(560, 160)])
-wire(stL, T["QF2t1"], ORG)
-wire(stN, T["QF2t2"], BLUE)
-# QF1 -> KV1 -> QD1 (via right gap)
-wire(T["QF1b1"], T["KV1t1"], RED, [(520, 405), (610, 405), (610, 185), (440, 185)])
-wire(T["QF1b2"], T["KV1t2"], BLUE, [(560, 395), (600, 395), (600, 195), (480, 195)])
-wire(T["KV1b1"], T["QD1t1"], RED, [(440, 421), (630, 421), (630, 167), (360, 167)])
-wire(T["KV1b2"], T["QD1t2"], BLUE, [(480, 413), (620, 413), (620, 176), (400, 176)])
-# QD1 -> SA1 position I
-wire(T["QD1b1"], T["SA1b2"], RED, [(360, 432), (190, 432)])
-wire(T["QD1b2"], T["SA1b6"], BLUE, [(400, 440), (230, 440)])
-# QD1 N -> busbar N1 (around the right side)
-wire(T["QD1b2"], n1, BLUE, [(400, 448), (645, 448), (645, 105), (380, 105)], "entryX=0.8;entryY=1;")
-# QF3 (socket) from mains after RCD
-wire(T["QD1b1"], T["QF3t1"], RED, [(360, 456), (60, 456), (60, 125), (280, 125)])
-wire(T["QF3t2"], n1, BLUE, extra="entryX=0.2;entryY=1;")
-wire(T["QF3b1"], T["XS1t1"], RED, [(280, 480), (140, 480)])
-wire(T["QF3b2"], T["XS1t2"], BLUE, [(320, 490), (180, 490)])
-# QF8 — mains only
-wire(T["QD1b1"], T["QF8t"], RED, [(360, 466), (425, 466), (425, 526), (400, 526)])
-# station -> SA1 position II
-wire(T["QF2b2"], T["SA1b8"], BLUE, [(160, 400), (250, 400)])
-wire(T["QF2b1"], T["SA1b4"], ORG, [(120, 410), (210, 410)])
-# SA1 common -> N2 and group comb
-wire(T["SA1t5"], n2, BLUE, extra="entryX=0.5;entryY=1;")
-wire(T["SA1t1"], T["QF4t"], BRN, [(200, 137), (48, 137), (48, 512), (240, 512)])
-for a, b in [("QF4t", "QF5t"), ("QF5t", "QF6t"), ("QF6t", "QF7t")]:
-    wire(T[a], T[b], BRN, [(240 + 40 * int(a[2]) - 160, 512), (240 + 40 * int(b[2]) - 160, 512)])
+def vline(x, y1, y2, color, width=3):
+    w.box(x - width / 2, min(y1, y2), width, abs(y2 - y1), "", f"fillColor={color};strokeColor=none;")
+
+def marker(x, y, text, color):
+    n = text.count("<br>") + 1
+    w.box(x - 9, y, 18, 13 * n + 2, text,
+          f"fillColor=#ffffff;strokeColor={color};strokeWidth=2;fontSize=9;fontStyle=1;spacing=0;rounded=1;arcSize=20;")
+
+def stub(key, text, color, length=14, up=False):
+    """Short wire end with a numbered marker; the rest of the wire runs hidden behind the devices."""
+    x, y = TP[key]
+    h = 13 * (text.count("<br>") + 1) + 2
+    if up:
+        vline(x, y - 7 - length, y - 7, color)
+        marker(x, y - 7 - length - h, text, color)
+    else:
+        vline(x, y + 7, y + 7 + length, color)
+        marker(x, y + 7 + length, text, color)
+
+def bar_stub(x, text, color, length=16):
+    vline(x, 90, 90 + length, color)
+    marker(x, 90 + length, text, color)
+
+# incoming cables (visible, no crossings): mains from top to QF1, station from top to QF2
+w.box(490, -2, 100, 28, "Мережа 230 В", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;")
+w.box(90, -2, 100, 28, "Зарядна станція", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;")
+for x, col, num in [(520, RED, "1"), (560, BLUE, "2"), (120, ORG, "13"), (160, BLUE, "14")]:
+    vline(x, 28, 213, col)
+    marker(x, 140, num, col)
+w.box(640, -2, 80, 28, "PE ввід", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;")
+vline(655, 28, 60, PEC)
+
+# numbered wire ends — top row, upper terminals
+for key, num, col in [("SA1t1", "17", BRN), ("SA1t5", "18", BLUE), ("QF3t1", "10", RED), ("QF3t2", "11", BLUE),
+                      ("QD1t1", "5", RED), ("QD1t2", "6", BLUE), ("KV1t1", "3", RED), ("KV1t2", "4", BLUE)]:
+    stub(key, num, col, up=True)
+# top row, lower terminals
+for key, num, col, ln in [("QF2b1", "15", ORG, 14), ("QF2b2", "16", BLUE, 14),
+                          ("SA1b2", "7", RED, 8), ("SA1b4", "15", ORG, 30), ("SA1b6", "8", BLUE, 8), ("SA1b8", "16", BLUE, 30),
+                          ("QF3b1", "19", RED, 14), ("QF3b2", "20", BLUE, 14),
+                          ("QD1b1", "7<br>10<br>12", RED, 14), ("QD1b2", "8<br>9", BLUE, 14),
+                          ("KV1b1", "5", RED, 14), ("KV1b2", "6", BLUE, 14),
+                          ("QF1b1", "3", RED, 14), ("QF1b2", "4", BLUE, 14)]:
+    stub(key, num, col, length=ln)
+# bottom row, upper terminals
+stub("XS1t1", "19", RED, length=20, up=True)
+stub("XS1t2", "20", BLUE, length=20, up=True)
+stub("QF8t", "12", RED, length=20, up=True)
+stub("QF4t", "17", BRN, length=20, up=True)
+w.box(240, 519, 120, 3, "", f"fillColor={BRN};strokeColor=none;")   # comb QF4–QF7
+for x in (280, 320, 360):
+    vline(x, 519, 533, BRN)
+w.box(262, 500, 100, 16, "гребінка QF4–QF7", "fillColor=none;strokeColor=none;fontSize=8;fontColor=#8b4513;")
+# busbars
+bar_stub(320, "9", BLUE); bar_stub(360, "11", BLUE); bar_stub(240, "18", BLUE)
 
 # outgoing lines
-loads = [("QF4b", 240, "Світло<br>дитяча", BRN), ("QF5b", 280, "Світло<br>зала", BRN),
-         ("QF6b", 320, "Розетки<br>дитяча", BRN), ("QF7b", 360, "Розетки<br>зала", BRN),
-         ("QF8b", 400, "Холодильник<br>Кондиціонер", RED)]
-for k, (key, x, text, col) in enumerate(loads):
-    lab = w.box(x - 19, 740 + (k % 2) * 42, 38, 0, "", "fillColor=none;strokeColor=none;")
-    wire(T[key], lab, col, extra="endArrow=block;endFill=1;endSize=4;")
-    w.box(x - 30, 742 + (k % 2) * 42, 60, 36, text, "fillColor=none;strokeColor=none;fontSize=9;")
+loads = [(240, "Світло<br>дитяча", BRN), (280, "Світло<br>зала", BRN),
+         (320, "Розетки<br>дитяча", BRN), (360, "Розетки<br>зала", BRN),
+         (400, "Холодильник<br>Кондиціонер", RED)]
+for k, (x, text, col) in enumerate(loads):
+    y2 = 738 + (k % 2) * 42
+    vline(x, 687, y2, col)
+    w.box(x - 5, y2, 10, 8, "", f"triangle;shape=triangle;direction=south;fillColor={col};strokeColor=none;")
+    w.box(x - 32, y2 + 8, 64, 30, text, "fillColor=none;strokeColor=none;fontSize=9;")
 plug = pt(80, 745)
 w.edge(sock, plug, style="edgeStyle=none;strokeColor=#bbbbbb;strokeWidth=7;endArrow=block;endFill=1;endSize=3;", pts=[(80, 610)])
 w.box(36, 750, 100, 32, "кабель до зарядної<br>станції (заряд)", "fillColor=none;strokeColor=none;fontSize=9;")
 
+# wire list
+rows = [("1", "Мережа L", "QF1:1", RED), ("2", "Мережа N", "QF1:N", BLUE),
+        ("3", "QF1:2", "KV1:L вх", RED), ("4", "QF1:N", "KV1:N вх", BLUE),
+        ("5", "KV1:L вих", "QD1:1", RED), ("6", "KV1:N вих", "QD1:N", BLUE),
+        ("7", "QD1:2", "SA1:2 (I)", RED), ("8", "QD1:N", "SA1:6 (I)", BLUE),
+        ("9", "QD1:N", "шина N1", BLUE), ("10", "QD1:2", "QF3:1", RED),
+        ("11", "шина N1", "QF3:N", BLUE), ("12", "QD1:2", "QF8:1", RED),
+        ("13", "Станція L", "QF2:1", ORG), ("14", "Станція N", "QF2:N", BLUE),
+        ("15", "QF2:2", "SA1:4 (II)", ORG), ("16", "QF2:N", "SA1:8 (II)", BLUE),
+        ("17", "SA1:1", "QF4:1 → гребінка QF4–QF7", BRN), ("18", "SA1:5", "шина N2", BLUE),
+        ("19", "QF3:2", "XS1 L", RED), ("20", "QF3:N", "XS1 N", BLUE)]
+tr = "".join(f"<tr><td align='center' style='border:2px solid {c};font-weight:bold'>{n}</td>"
+             f"<td>&nbsp;{a}</td><td>&nbsp;{b}</td></tr>" for n, a, b, c in rows)
+w.box(770, 40, 300, 360,
+      "<b>Таблиця з'єднань</b><table style='font-size:10px;border-collapse:collapse;margin-top:4px' cellpadding='1'>"
+      "<tr><th>№</th><th align='left'>&nbsp;Звідки</th><th align='left'>&nbsp;Куди</th></tr>" + tr + "</table>",
+      "fillColor=#ffffff;strokeColor=#999999;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;")
+
 # legend
-w.box(770, 60, 260, 230,
-      "<b>Умовні позначення</b><br>"
-      "<font color='#e02020'>━━</font> L — мережа<br>"
-      "<font color='#ff8c00'>━━</font> L — зарядна станція<br>"
-      "<font color='#8b4513'>━━</font> L — після SA1 (групи QF4–QF7)<br>"
-      "<font color='#1f5fd0'>━━</font> N<br>"
-      "<font color='#4caf50'>╍╍</font> PE<br><br>"
-      "N1 — нейтраль мережі після ПЗВ (QF8, XS1)<br>"
-      "N2 — нейтраль після SA1 (QF4–QF7)<br>"
-      "PE — до всіх ліній<br><br>"
-      "<i>Розташування клем і трасування дротів умовні.</i>", NOTE)
+w.box(770, 410, 300, 150,
+      "<b>Позначення</b><br>"
+      "Дроти прокладені за апаратами (як у щиті); на клемах показано лише маркер з номером дроту — "
+      "однаковий номер на обох кінцях.<br><br>"
+      "<font color='#e02020'>■</font> L мережа &nbsp; <font color='#ff8c00'>■</font> L станція &nbsp; "
+      "<font color='#8b4513'>■</font> L після SA1<br><font color='#1f5fd0'>■</font> N &nbsp; "
+      "<font color='#4caf50'>■</font> PE<br><br>"
+      "N груп QF4–QF7 — із шини N2; N холодильника/кондиціонера (QF8) — із шини N1; PE — до всіх ліній.", NOTE)
 
 out = ('<mxfile host="app.diagrams.net" type="device">' + p.xml("sld") + q.xml("layout") + w.xml("wiring") + '</mxfile>')
 open(sys.argv[1], "w", encoding="utf-8").write(out)
