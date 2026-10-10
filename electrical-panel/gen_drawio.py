@@ -30,7 +30,7 @@ MCB = "fillColor=#f5f5f5;strokeColor=#333333;"
 RCD = "fillColor=#dae8fc;strokeColor=#6c8ebf;"
 SW  = "fillColor=#fff2cc;strokeColor=#d6b656;"
 REL = "fillColor=#f8cecc;strokeColor=#b85450;"
-SRC = "ellipse;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;"
+SRC = "ellipse;shape=ellipse;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;"
 BUS = "fillColor=#333333;strokeColor=none;fontColor=#ffffff;fontSize=10;"
 NOTE = "shape=note;size=14;fillColor=#ffffcc;strokeColor=#999999;align=left;verticalAlign=top;spacingLeft=6;fontSize=10;"
 TITLE = "text;fontSize=16;fontStyle=1;align=left;strokeColor=none;fillColor=none;"
@@ -124,5 +124,133 @@ row(q, 420, [
     (6, "вільно", "fillColor=none;dashed=1;strokeColor=#999999;fontColor=#999999;"),
 ])
 
-out = ('<mxfile host="app.diagrams.net" type="device">' + p.xml("sld") + q.xml("layout") + '</mxfile>')
+# ---------- Page 3: wiring diagram (pictorial, Visio-like) ----------
+w = Page("Монтажна схема")
+w.box(30, -30, 700, 26, "Монтажна схема щита (вигляд спереду, з'єднання — за однолінійною схемою)", TITLE)
+w.box(20, 0, 730, 830, "", "fillColor=#ffffff;strokeColor=#999999;strokeWidth=2;rounded=1;arcSize=2;")
+T = {}
+
+def term(key, x, y):
+    T[key] = w.box(x - 7, y - 7, 14, 14, "", "ellipse;shape=ellipse;fillColor=#ffffff;strokeColor=#444444;strokeWidth=1.5;")
+
+def device(x, y, mods, h, tops, bots, model, tag, note="", kind="mcb"):
+    wd = mods * 40
+    w.box(x, y, wd, h, "", "rounded=1;arcSize=4;fillColor=#eeeeee;strokeColor=#555555;")
+    w.box(x + 3, y + 40, wd - 6, 4, "", "fillColor=#1f6fb5;strokeColor=none;")
+    w.box(x + 3, y + 46, wd - 6, 28, model, "fillColor=#ffffff;strokeColor=none;fontSize=8;verticalAlign=top;spacing=1;")
+    if kind == "zubr":
+        w.box(x + 8, y + 80, wd - 16, 34, "243 V", "fillColor=#111111;strokeColor=none;fontColor=#ff3333;fontSize=16;fontStyle=1;")
+        w.box(x + 8, y + 118, wd - 16, 16, "–  +  ≡  i", "fillColor=#ffffff;strokeColor=#999999;fontSize=9;rounded=1;")
+    elif kind == "switch":
+        w.box(x + 6, y + 82, wd - 12, 34, "I – 0 – II", "fillColor=#ffffff;strokeColor=#777777;fontSize=11;fontStyle=1;")
+    else:
+        w.box(x + wd * 0.2, y + 82, wd * 0.6, 40, "", "fillColor=#777777;strokeColor=#444444;rounded=1;")
+        if kind == "rcd":
+            w.box(x + wd - 20, y + 124, 14, 12, "T", "fillColor=#3a74c4;strokeColor=none;fontColor=#ffffff;fontSize=8;fontStyle=1;")
+    w.box(x + 2, y + h - 66, wd - 4, 38, f"<b>{tag}</b><br>{note}", "fillColor=none;strokeColor=none;fontSize=9;")
+    for k, tx in tops:
+        term(k, x + tx, y + 20)
+    for k, tx in bots:
+        term(k, x + tx, y + h - 20)
+
+def bar(x, y, wd, label, fill):
+    return w.box(x, y, wd, 30, label, f"fillColor={fill};strokeColor=#555555;fontSize=10;fontStyle=1;")
+
+def pt(x, y):
+    return w.box(x - 1, y - 1, 2, 2, "", "fillColor=none;strokeColor=none;")
+
+RED, BLUE, BRN, ORG, PEC = "#e02020", "#1f5fd0", "#8b4513", "#ff8c00", "#4caf50"
+def wire(a, b, color, pts=None, extra=""):
+    st = f"edgeStyle=none;strokeColor={color};strokeWidth=3;jumpStyle=arc;jumpSize=10;" + extra
+    w.edge(a, b, style=st, pts=pts)
+
+# busbars
+n2 = bar(190, 60, 100, "N2 (після SA1)", "#9cc3e6")
+n1 = bar(300, 60, 100, "N1 (мережа)", "#9cc3e6")
+pe = bar(600, 60, 110, "PE", "#a9d18e")
+
+# top rail
+w.box(30, 290, 640, 20, "", "fillColor=#c8c8c8;strokeColor=#888888;")
+device(100, 200, 2, 200, [("QF2t1", 20), ("QF2t2", 60)], [("QF2b1", 20), ("QF2b2", 60)], "MBN 210<br>B10", "QF2", "ввід від станції")
+device(180, 200, 2, 200, [("SA1t1", 20), ("SA1t5", 60)], [("SA1b2", 10), ("SA1b4", 30), ("SA1b6", 50), ("SA1b8", 70)], "SFT 225<br>25 A", "SA1", "I мережа<br>II станція", kind="switch")
+device(260, 200, 2, 200, [("QF3t1", 20), ("QF3t2", 60)], [("QF3b1", 20), ("QF3b2", 60)], "MCN 210<br>C10", "QF3", "розетка щита")
+device(340, 200, 2, 200, [("QD1t1", 20), ("QD1t2", 60)], [("QD1b1", 20), ("QD1b2", 60)], "CDA 240D<br>40 A / 30 mA", "QD1", "ПЗВ", kind="rcd")
+device(420, 200, 2, 200, [("KV1t1", 20), ("KV1t2", 60)], [("KV1b1", 20), ("KV1b2", 60)], "ZUBR D2-40", "KV1", "реле напруги", kind="zubr")
+device(500, 200, 2, 200, [("QF1t1", 20), ("QF1t2", 60)], [("QF1b1", 20), ("QF1b2", 60)], "MCN 225<br>C25", "QF1", "вступний")
+
+# bottom rail
+w.box(30, 600, 640, 20, "", "fillColor=#c8c8c8;strokeColor=#888888;")
+w.box(100, 520, 120, 180, "", "rounded=1;arcSize=4;fillColor=#eeeeee;strokeColor=#555555;")
+w.box(120, 570, 80, 80, "", "ellipse;shape=ellipse;fillColor=#ffffff;strokeColor=#777777;strokeWidth=2;")
+sock = w.box(137, 587, 46, 46, "", "ellipse;shape=ellipse;fillColor=#dddddd;strokeColor=#777777;")
+w.box(102, 652, 116, 40, "<b>XS1</b> SN016<br>розетка щита", "fillColor=none;strokeColor=none;fontSize=9;")
+term("XS1t1", 140, 540); term("XS1t2", 180, 540)
+groups3 = [("QF4", "MCN 110<br>C10"), ("QF5", "MCN 110<br>C10"), ("QF6", "MCN 116<br>C16"),
+           ("QF7", "MCN 116<br>C16"), ("QF8", "MCN 120<br>C20")]
+for k, (tag, model) in enumerate(groups3):
+    device(220 + k * 40, 520, 1, 180, [(tag + "t", 20)], [(tag + "b", 20)], model, tag)
+
+# mains input (right) and station input (top-left)
+inL, inN, inPE = pt(740, 150), pt(740, 160), pt(740, 75)
+w.box(680, 112, 70, 30, "Мережа<br>230 В", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;align=right;")
+stL, stN = pt(120, 20), pt(160, 20)
+w.box(30, 4, 85, 30, "Від зарядної<br>станції", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;align=right;")
+
+wire(inPE, pe, PEC, extra="dashed=1;dashPattern=8 4;")
+wire(inL, T["QF1t1"], RED, [(520, 150)])
+wire(inN, T["QF1t2"], BLUE, [(560, 160)])
+wire(stL, T["QF2t1"], ORG)
+wire(stN, T["QF2t2"], BLUE)
+# QF1 -> KV1 -> QD1 (via right gap)
+wire(T["QF1b1"], T["KV1t1"], RED, [(520, 405), (610, 405), (610, 185), (440, 185)])
+wire(T["QF1b2"], T["KV1t2"], BLUE, [(560, 395), (600, 395), (600, 195), (480, 195)])
+wire(T["KV1b1"], T["QD1t1"], RED, [(440, 421), (630, 421), (630, 167), (360, 167)])
+wire(T["KV1b2"], T["QD1t2"], BLUE, [(480, 413), (620, 413), (620, 176), (400, 176)])
+# QD1 -> SA1 position I
+wire(T["QD1b1"], T["SA1b2"], RED, [(360, 432), (190, 432)])
+wire(T["QD1b2"], T["SA1b6"], BLUE, [(400, 440), (230, 440)])
+# QD1 N -> busbar N1 (around the right side)
+wire(T["QD1b2"], n1, BLUE, [(400, 448), (645, 448), (645, 105), (380, 105)], "entryX=0.8;entryY=1;")
+# QF3 (socket) from mains after RCD
+wire(T["QD1b1"], T["QF3t1"], RED, [(360, 456), (60, 456), (60, 125), (280, 125)])
+wire(T["QF3t2"], n1, BLUE, extra="entryX=0.2;entryY=1;")
+wire(T["QF3b1"], T["XS1t1"], RED, [(280, 480), (140, 480)])
+wire(T["QF3b2"], T["XS1t2"], BLUE, [(320, 490), (180, 490)])
+# QF8 — mains only
+wire(T["QD1b1"], T["QF8t"], RED, [(360, 466), (425, 466), (425, 526), (400, 526)])
+# station -> SA1 position II
+wire(T["QF2b2"], T["SA1b8"], BLUE, [(160, 400), (250, 400)])
+wire(T["QF2b1"], T["SA1b4"], ORG, [(120, 410), (210, 410)])
+# SA1 common -> N2 and group comb
+wire(T["SA1t5"], n2, BLUE, extra="entryX=0.5;entryY=1;")
+wire(T["SA1t1"], T["QF4t"], BRN, [(200, 137), (48, 137), (48, 512), (240, 512)])
+for a, b in [("QF4t", "QF5t"), ("QF5t", "QF6t"), ("QF6t", "QF7t")]:
+    wire(T[a], T[b], BRN, [(240 + 40 * int(a[2]) - 160, 512), (240 + 40 * int(b[2]) - 160, 512)])
+
+# outgoing lines
+loads = [("QF4b", 240, "Світло<br>дитяча", BRN), ("QF5b", 280, "Світло<br>зала", BRN),
+         ("QF6b", 320, "Розетки<br>дитяча", BRN), ("QF7b", 360, "Розетки<br>зала", BRN),
+         ("QF8b", 400, "Холодильник<br>Кондиціонер", RED)]
+for k, (key, x, text, col) in enumerate(loads):
+    lab = w.box(x - 19, 740 + (k % 2) * 42, 38, 0, "", "fillColor=none;strokeColor=none;")
+    wire(T[key], lab, col, extra="endArrow=block;endFill=1;endSize=4;")
+    w.box(x - 30, 742 + (k % 2) * 42, 60, 36, text, "fillColor=none;strokeColor=none;fontSize=9;")
+plug = pt(80, 745)
+w.edge(sock, plug, style="edgeStyle=none;strokeColor=#bbbbbb;strokeWidth=7;endArrow=block;endFill=1;endSize=3;", pts=[(80, 610)])
+w.box(36, 750, 100, 32, "кабель до зарядної<br>станції (заряд)", "fillColor=none;strokeColor=none;fontSize=9;")
+
+# legend
+w.box(770, 60, 260, 230,
+      "<b>Умовні позначення</b><br>"
+      "<font color='#e02020'>━━</font> L — мережа<br>"
+      "<font color='#ff8c00'>━━</font> L — зарядна станція<br>"
+      "<font color='#8b4513'>━━</font> L — після SA1 (групи QF4–QF7)<br>"
+      "<font color='#1f5fd0'>━━</font> N<br>"
+      "<font color='#4caf50'>╍╍</font> PE<br><br>"
+      "N1 — нейтраль мережі після ПЗВ (QF8, XS1)<br>"
+      "N2 — нейтраль після SA1 (QF4–QF7)<br>"
+      "PE — до всіх ліній<br><br>"
+      "<i>Розташування клем і трасування дротів умовні.</i>", NOTE)
+
+out = ('<mxfile host="app.diagrams.net" type="device">' + p.xml("sld") + q.xml("layout") + w.xml("wiring") + '</mxfile>')
 open(sys.argv[1], "w", encoding="utf-8").write(out)
