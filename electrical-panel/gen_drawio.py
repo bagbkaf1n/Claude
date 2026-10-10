@@ -83,8 +83,7 @@ p.box(780, 60, 340, 150,
       "• ПЗВ QD1 стоїть лише в колі мережі (до SA1), тому при живленні від станції "
       "групи QF4–QF7 працюють без ПЗВ.<br>"
       "• QF8 (холодильник, кондиціонер) і QF3 живляться лише від мережі — до SA1.<br>"
-      "• XS1 живиться від мережі (через QF3) — для зарядки станції; "
-      "точка підключення QF3 (до/після ПЗВ) — уточнити.<br>"
+      "• QF3 (розетка XS1 для зарядки станції) — після ПЗВ; положення I перемикача SA1 живиться перемичкою від вхідних клем QF3.<br>"
       "• N — через сині шини N, PE — через зелену шину PE (на схемі не показані).", NOTE)
 
 # ---------- Page 2: front-view layout ----------
@@ -193,8 +192,9 @@ RED, BLUE, BRN, ORG, PEC = "#e02020", "#1f5fd0", "#8b4513", "#ff8c00", "#4caf50"
 def vline(x, y1, y2, color, width=5):
     w.box(x - width / 2, min(y1, y2), width, abs(y2 - y1), "", f"fillColor={color};strokeColor=none;")
 
-def ferrule(x, y):
-    w.box(x - 4, y, 8, 9, "", "fillColor=#ffa31a;strokeColor=#b36b00;")
+def ferrule(x, y, twin=False):
+    d = 7 if twin else 4
+    w.box(x - d, y, 2 * d, 9, "", "fillColor=#ffa31a;strokeColor=#b36b00;")
 
 def marker(x, y, text, color):
     n = text.count("<br>") + 1
@@ -205,14 +205,14 @@ def stub(key, text, color, length=28, up=False):
     """Wire end with ferrule and numbered marker; the rest of the wire runs hidden behind the devices."""
     x, y = TP[key]
     h = 13 * (text.count("<br>") + 1) + 2
-    if up:
-        vline(x, y - 7 - length, y - 7, color)
-        ferrule(x, y - 16)
-        marker(x, y - 7 - length - h, text, color)
+    twin = "<br>" in text   # two wires in one twin ferrule
+    y1, y2 = (y - 7 - length, y - 7) if up else (y + 7, y + 7 + length)
+    if twin:
+        vline(x - 3, y1, y2, color, 3); vline(x + 3, y1, y2, color, 3)
     else:
-        vline(x, y + 7, y + 7 + length, color)
-        ferrule(x, y + 7)
-        marker(x, y + 7 + length, text, color)
+        vline(x, y1, y2, color)
+    ferrule(x, y - 16 if up else y + 7, twin)
+    marker(x, y1 - h if up else y2, text, color)
 
 def bar_stub(x, text, color, length=16):
     vline(x, 90, 90 + length, color)
@@ -229,14 +229,14 @@ w.box(640, -2, 80, 28, "PE ввід", "fillColor=none;strokeColor=none;fontSize=
 vline(655, 28, 60, PEC)
 
 # numbered wire ends — top row, upper terminals
-for key, num, col in [("SA1t1", "17", BRN), ("SA1t5", "18", BLUE), ("QF3t1", "10", RED), ("QF3t2", "11", BLUE),
+for key, num, col in [("SA1t1", "17", BRN), ("SA1t5", "18", BLUE), ("QF3t1", "7<br>10", RED), ("QF3t2", "8<br>11", BLUE),
                       ("QD1t1", "5", RED), ("QD1t2", "6", BLUE), ("KV1t1", "3", RED), ("KV1t2", "4", BLUE)]:
     stub(key, num, col, up=True)
 # top row, lower terminals
 for key, num, col, ln in [("QF2b1", "15", ORG, 28), ("QF2b2", "16", BLUE, 28),
                           ("SA1b2", "7", RED, 18), ("SA1b4", "15", ORG, 46), ("SA1b6", "8", BLUE, 18), ("SA1b8", "16", BLUE, 46),
                           ("QF3b1", "19", RED, 28), ("QF3b2", "20", BLUE, 28),
-                          ("QD1b1", "7<br>10<br>12", RED, 28), ("QD1b2", "8<br>9", BLUE, 28),
+                          ("QD1b1", "10<br>12", RED, 28), ("QD1b2", "9<br>11", BLUE, 28),
                           ("KV1b1", "5", RED, 28), ("KV1b2", "6", BLUE, 28),
                           ("QF1b1", "3", RED, 28), ("QF1b2", "4", BLUE, 28)]:
     stub(key, num, col, length=ln)
@@ -252,7 +252,7 @@ for x in (280, 320, 360):
     ferrule(x, 727)
 w.box(256, 756, 110, 16, "гребінка QF4–QF7 (знизу)", "fillColor=none;strokeColor=none;fontSize=8;fontColor=#8b4513;fontStyle=1;")
 # busbars
-bar_stub(320, "9", BLUE); bar_stub(360, "11", BLUE); bar_stub(240, "18", BLUE)
+bar_stub(340, "9", BLUE); bar_stub(240, "18", BLUE)
 
 # outgoing lines — from the upper terminals
 loads = [(240, "Світло дитяча", BRN), (280, "Світло зала", BRN),
@@ -270,9 +270,9 @@ w.box(26, 800, 100, 28, "кабель до зарядної<br>станції (�
 rows = [("1", "Мережа L", "QF1:1", RED), ("2", "Мережа N", "QF1:N", BLUE),
         ("3", "QF1:2", "KV1:L вх", RED), ("4", "QF1:N", "KV1:N вх", BLUE),
         ("5", "KV1:L вих", "QD1:1", RED), ("6", "KV1:N вих", "QD1:N", BLUE),
-        ("7", "QD1:2", "SA1:2 (I)", RED), ("8", "QD1:N", "SA1:6 (I)", BLUE),
+        ("7", "QF3:1 (вхід)", "SA1:2 (I)", RED), ("8", "QF3:N (вхід)", "SA1:6 (I)", BLUE),
         ("9", "QD1:N", "шина N1", BLUE), ("10", "QD1:2", "QF3:1", RED),
-        ("11", "шина N1", "QF3:N", BLUE), ("12", "QD1:2", "QF8 (низ)", RED),
+        ("11", "QD1:N", "QF3:N", BLUE), ("12", "QD1:2", "QF8 (низ)", RED),
         ("13", "Станція L", "QF2:1", ORG), ("14", "Станція N", "QF2:N", BLUE),
         ("15", "QF2:2", "SA1:4 (II)", ORG), ("16", "QF2:N", "SA1:8 (II)", BLUE),
         ("17", "SA1:1", "QF4 (низ) → гребінка", BRN), ("18", "SA1:5", "шина N2", BLUE),
@@ -285,10 +285,10 @@ w.box(770, 40, 300, 360,
       "fillColor=#ffffff;strokeColor=#999999;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fontSize=11;")
 
 # legend
-w.box(770, 410, 300, 150,
+w.box(770, 410, 300, 180,
       "<b>Позначення</b><br>"
       "Дроти прокладені за апаратами (як у щиті); на клемах показано лише маркер з номером дроту — "
-      "однаковий номер на обох кінцях.<br><br>"
+      "однаковий номер на обох кінцях. Два номери на одному маркері — два дроти в подвійному наконечнику (НШВІ).<br><br>"
       "<font color='#e02020'>■</font> L мережа &nbsp; <font color='#ff8c00'>■</font> L станція &nbsp; "
       "<font color='#8b4513'>■</font> L після SA1<br><font color='#1f5fd0'>■</font> N &nbsp; "
       "<font color='#4caf50'>■</font> PE<br><br>"
