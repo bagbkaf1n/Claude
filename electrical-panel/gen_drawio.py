@@ -84,7 +84,9 @@ p.box(780, 60, 340, 150,
       "групи QF4–QF7 працюють без ПЗВ.<br>"
       "• QF8 (холодильник, кондиціонер) і QF3 живляться лише від мережі — до SA1.<br>"
       "• QF3 (розетка XS1 для зарядки станції) — після ПЗВ; положення I перемикача SA1 живиться перемичкою від вхідних клем QF3.<br>"
-      "• N — через сині шини N, PE — через зелену шину PE (на схемі не показані).<br>"
+      "• N — через сині шини N (на схемі не показані).<br>"
+      "• Будинок — система TN-C (хрущовка): окремого PE немає, шина PE у щиті не заземлена. "
+      "Захист від ураження — лише ПЗВ 30 мА.<br>"
       "• Внутрішня комутація щита — ПВ3 4 мм².", NOTE)
 
 # ---------- Page 2: front-view layout ----------
@@ -226,8 +228,7 @@ for x, col, num in [(520, RED, "1"), (560, BLUE, "2"), (120, ORG, "13"), (160, B
     vline(x, 28, 207, col)
     ferrule(x, 196)
     marker(x, 130, num, col)
-w.box(640, -2, 80, 28, "PE ввід", "fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;")
-vline(655, 28, 60, PEC)
+w.box(600, 26, 120, 28, "ввід TN-C: окремого PE немає", "fillColor=none;strokeColor=none;fontSize=9;fontStyle=2;fontColor=#b00000;")
 
 # numbered wire ends — top row, upper terminals
 for key, num, col in [("SA1t1", "17", BRN), ("SA1t5", "18", BLUE), ("QF3t1", "7<br>10", RED), ("QF3t2", "8<br>11", BLUE),
@@ -294,7 +295,7 @@ w.box(770, 410, 300, 195,
       "<font color='#8b4513'>■</font> L після SA1<br><font color='#1f5fd0'>■</font> N &nbsp; "
       "<font color='#4caf50'>■</font> PE<br><br>"
       "Внутрішня комутація — ПВ3 4 мм² (Cu, гнучкий) з НШВІ.<br>"
-      "Живлення груп — знизу (гребінка), відхідні лінії — зверху.<br>N груп QF4–QF7 — із шини N2; N холодильника/кондиціонера (QF8) — із шини N1; PE — до всіх ліній.", NOTE)
+      "Живлення груп — знизу (гребінка), відхідні лінії — зверху.<br>N груп QF4–QF7 — із шини N2; N холодильника/кондиціонера (QF8) — із шини N1.<br>Ввід TN-C: шина PE не заземлена, з N її не з'єднувати.", NOTE)
 
 out = ('<mxfile host="app.diagrams.net" type="device">' + p.xml("sld") + q.xml("layout") + w.xml("wiring") + '</mxfile>')
 open(sys.argv[1], "w", encoding="utf-8").write(out)
