@@ -293,7 +293,8 @@ w.box(770, 410, 300, 195,
       "<font color='#e02020'>■</font> L мережа &nbsp; <font color='#ff8c00'>■</font> L станція &nbsp; "
       "<font color='#8b4513'>■</font> L після SA1<br><font color='#1f5fd0'>■</font> N &nbsp; "
       "<font color='#4caf50'>■</font> PE<br><br>"
-      "Внутрішня комутація — ПВ3 4 мм² (Cu, гнучкий) з НШВІ.<br>"Живлення груп — знизу (гребінка), відхідні лінії — зверху.<br>N груп QF4–QF7 — із шини N2; N холодильника/кондиціонера (QF8) — із шини N1; PE — до всіх ліній.", NOTE)
+      "Внутрішня комутація — ПВ3 4 мм² (Cu, гнучкий) з НШВІ.<br>"
+      "Живлення груп — знизу (гребінка), відхідні лінії — зверху.<br>N груп QF4–QF7 — із шини N2; N холодильника/кондиціонера (QF8) — із шини N1; PE — до всіх ліній.", NOTE)
 
 out = ('<mxfile host="app.diagrams.net" type="device">' + p.xml("sld") + q.xml("layout") + w.xml("wiring") + '</mxfile>')
 open(sys.argv[1], "w", encoding="utf-8").write(out)
