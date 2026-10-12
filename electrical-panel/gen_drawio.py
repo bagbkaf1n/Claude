@@ -298,5 +298,76 @@ w.box(770, 410, 300, 195,
       "Внутрішня комутація — ПВ3 4 мм² (Cu, гнучкий) з НШВІ.<br>"
       "Живлення груп — знизу (гребінка), відхідні лінії — зверху.<br>N груп QF4–QF7 — із шини N2; N холодильника/кондиціонера (QF8) — із шини N1.<br>Ввід TN-C: шина PE не заземлена, з N її не з'єднувати.", NOTE)
 
-out = ('<mxfile host="app.diagrams.net" type="device">' + p.xml("sld") + q.xml("layout") + w.xml("wiring") + '</mxfile>')
+# ---------- Page 4: after upgrade ----------
+r = Page("Після модернізації")
+CHG = "strokeColor=#e67e00;strokeWidth=3;"
+r.box(-130, -60, 900, 30, "Після модернізації: один ПЗВ після перемикача, всі групи — від SA1 (помаранчева рамка — змінено)", TITLE)
+r_grid = r.box(100, 40, 140, 50, "Мережа<br>~230 В (TN-C)", SRC)
+r_qf1 = r.box(100, 120, 140, 55, "<b>QF1</b> MCN 225<br>C25, 2P<br>вступний", MCB)
+r_kv = r.box(100, 205, 140, 55, "<b>KV1</b> ZUBR D2-40red<br>реле напруги 40 А", REL)
+r_mbus = r.box(-130, 295, 370, 14, "шина L мережі", BUS)
+r.edge(r_grid, r_qf1); r.edge(r_qf1, r_kv)
+r.edge(r_kv, r_mbus, style="exitX=0.5;exitY=1;entryX=0.8108;entryY=0;")
+r_qf3 = r.box(-130, 340, 150, 65, "<b>QF3</b> диф-автомат<br>C16, 30 мА, тип A, 2P<br><i>(замість MCN 210 C10)</i>", RCD + CHG)
+r_xs1 = r.box(-130, 440, 150, 50, "<b>XS1</b> SN016<br>розетка щита", "fillColor=#e1d5e7;strokeColor=#9673a6;")
+r.edge(r_mbus, r_qf3, style="exitX=0.2027;exitY=1;entryX=0.5;entryY=0;")
+r.edge(r_qf3, r_xs1)
+r_st = r.box(450, 40, 160, 50, "Deye SUN-BK250<br>(GRID ← / LOAD →)", SRC)
+r.edge(r_xs1, r_st, style="dashed=1;strokeColor=#9673a6;endArrow=block;", label="заряд + транзит (UPS)",
+       pts=[(-165, 465), (-165, 10), (530, 10)])
+r_qf2 = r.box(450, 205, 160, 55, "<b>QF2</b> C16, 2P<br>вихід станції<br><i>(замість B10)</i>", MCB + CHG)
+r.edge(r_st, r_qf2, style=GEN_EDGE)
+r_sa = r.box(230, 340, 180, 65, "<b>SA1</b> SFT 225<br>перемикач I–0–II, 25 А<br>I – мережа / II – станція", SW)
+r.edge(r_mbus, r_sa, "I", style="exitX=1;exitY=0.5;entryX=0.25;entryY=0;", pts=[(275, 302)])
+r.edge(r_qf2, r_sa, "II", style=GEN_EDGE + "exitX=0.5;exitY=1;entryX=0.75;entryY=0;", pts=[(530, 315), (365, 315)])
+r_qd = r.box(240, 440, 160, 60, "<b>QD1</b> CDA 240D<br>ПЗВ 40 А / 30 мА, тип A<br><i>(перенесено після SA1)</i>", RCD + CHG)
+r.edge(r_sa, r_qd)
+r_bus = r.box(20, 540, 520, 14, "шина L і шина N після ПЗВ (усі групи)", BUS)
+r.edge(r_qd, r_bus, style="exitX=0.5;exitY=1;entryX=0.577;entryY=0;")
+groups4 = [("QF4", "C10", "Світло дитяча<br>3×1,5", ""), ("QF5", "C10", "Світло зала<br>3×1,5", ""),
+           ("QF6", "C16", "Розетки дитяча<br>3×2,5", ""), ("QF7", "C16", "Розетки зала<br>3×2,5", ""),
+           ("QF8", "C16", "Холодильник<br>Кондиціонер<br>3×2,5", CHG)]
+for k, (tag, rating, name, extra) in enumerate(groups4):
+    x = 20 + k * 104
+    b = r.box(x, 590, 94, 55, f"<b>{tag}</b><br>{rating}, 1P" + ("<br><i>(було C20)</i>" if extra else ""), MCB + extra)
+    r.edge(r_bus, b, style=f"exitX={(x + 47 - 20) / 520:.4f};exitY=1;entryX=0.5;entryY=0;")
+    ln = r.box(x, 680, 94, 55, name, "fillColor=none;")
+    r.edge(b, ln)
+r.box(640, 40, 330, 215,
+      "<b>Що змінюється</b><br>"
+      "1. QD1 (ПЗВ 40 А / 30 мА) — з вводу переноситься <b>після SA1</b>: захищає всі групи "
+      "в обох положеннях перемикача й в усіх режимах станції.<br>"
+      "2. QF8 (холодильник, кондиціонер) — повертається <b>за перемикач</b>, живиться разом з іншими "
+      "групами; C20 → <b>C16</b>. <i>Після виправлення прошивки Deye.</i><br>"
+      "3. QF3 → <b>диф-автомат C16 30 мА тип A</b>: розетка станції XS1 стоїть до ПЗВ і має власний захист.<br>"
+      "4. QF2 B10 → <b>C16</b>: не вибиває від кидка струму при перемиканні I → II.<br>"
+      "5. Шина N: одна після ПЗВ для QF4–QF8; положення I SA1 — як і раніше перемичкою з вхідних клем QF3.<br>"
+      "6. Deye: <b>Neutral_To_Earth_Control = Enable</b> (ПЗВ спрацьовує і від батареї при пробої на PE), "
+      "Max_To_GridPower = 0.<br>"
+      "7. На місці QD1 на верхній рейці — резерв 2 мод. (напр., під УЗІП).", NOTE)
+
+# front view after upgrade
+r.box(-130, 780, 900, 26, "Розміщення після модернізації (вигляд спереду)", TITLE)
+r.box(40, 815, 760, 400, "", "fillColor=#fafafa;strokeColor=#666666;strokeWidth=2;rounded=1;arcSize=2;")
+row(r, 840, [
+    (2, "<b>QF2</b><br>C16<br>2P", MCB + CHG),
+    (2, "<b>SA1</b><br>SFT 225<br>I–0–II", SW),
+    (2, "<b>QF3</b><br>диф<br>C16<br>30 мА", RCD + CHG),
+    (2, "резерв<br>(УЗІП)", "fillColor=none;dashed=1;strokeColor=#999999;fontColor=#999999;"),
+    (2, "<b>KV1</b><br>ZUBR<br>D2-40red", REL),
+    (2, "<b>QF1</b><br>MCN 225<br>C25", MCB),
+])
+row(r, 1030, [
+    (3, "<b>XS1</b><br>SN016<br>розетка<br>станції", "fillColor=#e1d5e7;strokeColor=#9673a6;"),
+    (1, "<b>QF4</b><br>C10<br><i>світло дит.</i>", MCB),
+    (1, "<b>QF5</b><br>C10<br><i>світло зала</i>", MCB),
+    (1, "<b>QF6</b><br>C16<br><i>роз. дит.</i>", MCB),
+    (1, "<b>QF7</b><br>C16<br><i>роз. зала</i>", MCB),
+    (1, "<b>QF8</b><br>C16<br><i>холод./ конд.</i>", MCB + CHG),
+    (2, "<b>QD1</b><br>ПЗВ<br>40 А<br>30 мА", RCD + CHG),
+    (4, "вільно", "fillColor=none;dashed=1;strokeColor=#999999;fontColor=#999999;"),
+])
+r.box(270, 1185, 360, 20, "гребінка: вихід QD1 → QF8 … QF4 (знизу); вхід QD1 — від SA1", "fillColor=none;strokeColor=none;fontSize=10;fontColor=#8b4513;fontStyle=1;")
+
+out = ('<mxfile host="app.diagrams.net" type="device">' + p.xml("sld") + q.xml("layout") + w.xml("wiring") + r.xml("upgrade") + '</mxfile>')
 open(sys.argv[1], "w", encoding="utf-8").write(out)
