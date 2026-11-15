@@ -55,7 +55,7 @@ p.edge(rcd, mbus, style="exitX=0.5;exitY=1;entryX=0.865;entryY=0;")
 p.edge(mbus, sa, "I", style="exitX=1;exitY=0.5;entryX=0.25;entryY=0;", pts=[(300, 387)])
 p.edge(gen, qf2, style=GEN_EDGE); p.edge(qf2, sa, "II", style=GEN_EDGE + "exitX=0.5;exitY=1;entryX=0.75;entryY=0;", pts=[(540, 395), (400, 395)])
 
-qf3 = p.box(-110, 430, 140, 55, "<b>QF3</b> MCN 210<br>C10, 2P", MCB)
+qf3 = p.box(-110, 430, 140, 55, "<b>QF3</b> C16, 2P<br><i>(було C10)</i>", MCB)
 p.edge(mbus, qf3, style="exitX=0.4615;exitY=1;entryX=0.5;entryY=0;")
 xs1 = p.box(-110, 520, 140, 55, "<b>XS1</b> SN016<br>розетка щитка<br>(зарядка станції)", "fillColor=#e1d5e7;strokeColor=#9673a6;")
 p.edge(qf3, xs1)
@@ -112,7 +112,7 @@ def row(page, y, items, x0=70, h=150):
 row(q, 160, [
     (2, "<b>QF2</b><br>MBN 210<br>B10", MCB),
     (2, "<b>SA1</b><br>SFT 225<br>25 A<br>I–0–II", SW),
-    (2, "<b>QF3</b><br>MCN 210<br>C10", MCB),
+    (2, "<b>QF3</b><br>C16<br>2P", MCB),
     (2, "<b>QD1</b><br>CDA 240D<br>40 A<br>30 мА", RCD),
     (2, "<b>KV1</b><br>ZUBR<br>D2-40red", REL),
     (2, "<b>QF1</b><br>MCN 225<br>C25", MCB),
@@ -174,7 +174,7 @@ pe = bar(600, 60, 110, "PE", "#a9d18e")
 w.box(30, 290, 640, 20, "", "fillColor=#c8c8c8;strokeColor=#888888;")
 device(100, 200, 2, 200, [("QF2t1", 20), ("QF2t2", 60)], [("QF2b1", 20), ("QF2b2", 60)], "MBN 210<br>B10", "QF2", "ввід від станції")
 device(180, 200, 2, 200, [("SA1t1", 20), ("SA1t5", 60)], [("SA1b2", 10), ("SA1b4", 30), ("SA1b6", 50), ("SA1b8", 70)], "SFT 225<br>25 A", "SA1", "I мережа<br>II станція", kind="switch")
-device(260, 200, 2, 200, [("QF3t1", 20), ("QF3t2", 60)], [("QF3b1", 20), ("QF3b2", 60)], "MCN 210<br>C10", "QF3", "розетка щита")
+device(260, 200, 2, 200, [("QF3t1", 20), ("QF3t2", 60)], [("QF3b1", 20), ("QF3b2", 60)], "C16 2P", "QF3", "розетка щита")
 device(340, 200, 2, 200, [("QD1t1", 20), ("QD1t2", 60)], [("QD1b1", 20), ("QD1b2", 60)], "CDA 240D<br>40 A / 30 mA", "QD1", "ПЗВ", kind="rcd")
 device(420, 200, 2, 200, [("KV1t1", 20), ("KV1t2", 60)], [("KV1b1", 20), ("KV1b2", 60)], "ZUBR D2-40", "KV1", "реле напруги", kind="zubr")
 device(500, 200, 2, 200, [("QF1t1", 20), ("QF1t2", 60)], [("QF1b1", 20), ("QF1b2", 60)], "MCN 225<br>C25", "QF1", "вступний")
